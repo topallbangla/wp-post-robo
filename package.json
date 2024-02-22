@@ -1,0 +1,21 @@
+{
+  "name": "auto-poster",
+  "version": "1.0.0",
+  "description": "WP auto poster by WP REST API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node index.js",
+    "start": "nodemon index.js"
+  },
+  "author": "Adnan Ahmed",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "cors": "^2.8.5",
+    "jsdom": "^24.0.0",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "mongoose": "^8.1.1"
+  }
+}
