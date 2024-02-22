@@ -1,11 +1,15 @@
 import fs from 'fs';
 import notify from '../lib/notify.js';
 import sanitizeHTML from '../lib/sanitizeHTML.js';
+import createTaxonomy from '../lib/createTaxonomy.js';
 import {htmlToText} from '../lib/html-to-text.js';
 import selectShortDescription from '../lib/selectShortDescription.js';
 
+let part = 1;
 let count = 0;
 let resCount = 0;
+
+const options = {};
 
 /**
  * আমাকে এই কোড সম্পুর্ণ করতে হবে।
@@ -28,7 +32,8 @@ const poster = async (req, res) => {
         const maxPost = checkWP.headers.get('x-wp-total');
         const maxPage = checkWP.headers.get('x-wp-totalpages');
         if (maxPost) {
-          await caller(maxPost, maxPage, url, opt, res);
+          await initializer(opt);
+          await caller(maxPost, maxPage, url, res);
         }
       } else {
         response(res, 400, false, `A WP API URL is required, but it's not a WP API URL.`);
@@ -42,7 +47,7 @@ const poster = async (req, res) => {
   }
 };
 
-async function caller(ponum, panum, url, opt, resp) {
+async function caller(ponum, panum, url, resp) {
   const api = new URL(url);
   
   for (let pa = 1; pa <= panum; pa++) {
@@ -58,6 +63,7 @@ async function caller(ponum, panum, url, opt, resp) {
         if (p.id) {
           console.log(p.id);
           count += 1;
+          part += 1;
           if (count === 1) {
             response(resp, 201, true, `posting started: ${p.id}`);
           }
@@ -76,12 +82,31 @@ async function caller(ponum, panum, url, opt, resp) {
 }
 
 async function initializer(opt) {
+  const opts = {
+    lekhok: opt.lekhok ? await createTaxonomy('lekhok', opt.lekhok) : '',
+    series: opt.series ? await createTaxonomy('series', opt.series) : '',
+    categories: opt.categories ? await createTaxonomy('categories', opt.categories) : '',
+    titlePrefix: opt.titlePrefix,
+    slugPrefix: opt.slugPrefix
+  };
+  Object.assign(options, opts);
   
+  return true;
 }
 
 async function publisher(data) {
+  const title = setTitle(data.title.rendered);
+  console.log(part);
+  console.log(bnToen(getBnNum(title)[0]));
+  console.log(bnToen(getBnNum(title)[0]) !== part);
+  if (bnToen(getBnNum(title)[0]) !== part) return false;
+  const slug = setSlug(data.title.rendered);
   const body = JSON.stringify({
-      title: htmlToText(data.title.rendered),
+      title,
+      slug,
+      lekhok: options.lekhok,
+      series: options.series,
+      categories: options.categories,
       excerpt: await selectShortDescription(data.content.rendered),
       content: sanitizeHTML(data.content.rendered),
       // status: 'publish'
@@ -111,6 +136,52 @@ async function publisher(data) {
       content: sanitizeHTML(data.content.rendered)
     }));
   */
+  
+  function setTitle(ti) {
+    return options.titlePrefix + getBnNum(ti)[0];
+  }
+  function setSlug(sl) {
+    return options.slugPrefix + part;
+  }
+}
+
+function getBnNum(text) {
+  return Array.from(text.matchAll(/[০-৯]+/g), match => match[0]);
+}
+
+function enTobn(enNum) {
+  const enNumbers = {
+    '0': '০',
+    '1': '১',
+    '2': '২',
+    '3': '৩',
+    '4': '৪',
+    '5': '৫',
+    '6': '৬',
+    '7': '৭',
+    '8': '৮',
+    '9': '৯'
+  };
+  
+  const num = enNum.toString();
+  
+  return num.replace(/[0-9]/g, (char) => enNumbers[char]);
+}
+function bnToen(bnNum) {
+  const bnNumbers = {
+    '০': '0',
+    '১': '1',
+    '২': '2',
+    '৩': '3',
+    '৪': '4',
+    '৫': '5',
+    '৬': '6',
+    '৭': '7',
+    '৮': '8',
+    '৯': '9'
+  };
+
+  return parseInt(bnNum.replace(/[০-৯]/g, (char) => bnNumbers[char]));
 }
 
 function response(res, co, suc, msg) {
