@@ -14,13 +14,13 @@ let resCount = 0;
  */
 
 const token = Buffer.from(`${process.env.USER}:${process.env.WP_HUB_TOKEN}`).toString('base64');
-console.log(token);
 
 
 const poster = async (req, res) => {
   resCount = 0;
   if (req.body.url) {
     const url = req.body.url;
+    const opt = req.body.opt;
     
     try {
       const checkWP = await fetch(url);
@@ -28,7 +28,7 @@ const poster = async (req, res) => {
         const maxPost = checkWP.headers.get('x-wp-total');
         const maxPage = checkWP.headers.get('x-wp-totalpages');
         if (maxPost) {
-          await caller(maxPost, maxPage, url, res);
+          await caller(maxPost, maxPage, url, opt, res);
         }
       } else {
         response(res, 400, false, `A WP API URL is required, but it's not a WP API URL.`);
@@ -42,7 +42,7 @@ const poster = async (req, res) => {
   }
 };
 
-async function caller(ponum, panum, url, resp) {
+async function caller(ponum, panum, url, opt, resp) {
   const api = new URL(url);
   
   for (let pa = 1; pa <= panum; pa++) {
@@ -73,6 +73,10 @@ async function caller(ponum, panum, url, resp) {
   }
   await notify(`${count} post publishing complete...`);
   return 'complete!';
+}
+
+async function initializer(opt) {
+  
 }
 
 async function publisher(data) {
